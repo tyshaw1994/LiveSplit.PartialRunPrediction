@@ -40,6 +40,8 @@ namespace LiveSplit.UI.Components
         public string Comparison { get; set; }
         public LiveSplitState CurrentState { get; set; }
         public bool Display2Rows { get; set; }
+        public bool SwitchToBestPossibleTime { get; set; }
+        public string LabelOverride { get; set; }
 
         public LayoutMode Mode { get; set; }
 
@@ -60,8 +62,9 @@ namespace LiveSplit.UI.Components
             // #1682: Currently, support "Best Segments" comparison only
             Comparison = "Best Segments";
             Display2Rows = false;
+            SwitchToBestPossibleTime = false;
+            LabelOverride = string.Empty;
 
-            dmnCompareSplitNumber.DataBindings.Add("Value", this, "VisualCompareSplitNumber", false, DataSourceUpdateMode.OnPropertyChanged);
             chkOverrideTextColor.DataBindings.Add("Checked", this, "OverrideTextColor", false, DataSourceUpdateMode.OnPropertyChanged);
             btnTextColor.DataBindings.Add("BackColor", this, "TextColor", false, DataSourceUpdateMode.OnPropertyChanged);
             chkOverrideTimeColor.DataBindings.Add("Checked", this, "OverrideTimeColor", false, DataSourceUpdateMode.OnPropertyChanged);
@@ -73,6 +76,9 @@ namespace LiveSplit.UI.Components
             btnColor2.DataBindings.Add("BackColor", this, "BackgroundColor2", false, DataSourceUpdateMode.OnPropertyChanged);
             cmbComparison.SelectedIndexChanged += cmbComparison_SelectedIndexChanged;
             cmbComparison.DataBindings.Add("SelectedItem", this, "Comparison", false, DataSourceUpdateMode.OnPropertyChanged);
+            cmbCompareSplit.SelectedIndexChanged += cmbCompareSplit_SelectedIndexChanged;
+            chkSwitchToBestPossibleTime.DataBindings.Add("Checked", this, "SwitchToBestPossibleTime", false, DataSourceUpdateMode.OnPropertyChanged);
+            txtLabelOverride.DataBindings.Add("Text", this, "LabelOverride", false, DataSourceUpdateMode.OnPropertyChanged);
 
             rdoSeconds.CheckedChanged += rdoSeconds_CheckedChanged;
             rdoHundredths.CheckedChanged += rdoHundredths_CheckedChanged;
@@ -90,6 +96,11 @@ namespace LiveSplit.UI.Components
         {
             label1.Enabled = btnTextColor.Enabled = chkOverrideTextColor.Checked;
         }
+        void cmbCompareSplit_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            VisualCompareSplitNumber = cmbCompareSplit.SelectedIndex + 1;
+        }
+
         void cmbComparison_SelectedIndexChanged(object sender, EventArgs e)
         {
             Comparison = cmbComparison.SelectedItem.ToString();
@@ -103,6 +114,17 @@ namespace LiveSplit.UI.Components
 
             // #1682: Currently, support "Best Segments" comparison only
             cmbComparison.Items.Add("Best Segments");
+
+            cmbCompareSplit.Items.Clear();
+            if (CurrentState != null)
+            {
+                foreach (var segment in CurrentState.Run)
+                    cmbCompareSplit.Items.Add(segment.Name);
+            }
+            var selectIndex = VisualCompareSplitNumber - 1;
+            cmbCompareSplit.SelectedIndex = (selectIndex >= 0 && selectIndex < cmbCompareSplit.Items.Count)
+                ? selectIndex
+                : 0;
 
             rdoSeconds.Checked = Accuracy == TimeAccuracy.Seconds;
             rdoTenths.Checked = Accuracy == TimeAccuracy.Tenths;
@@ -163,6 +185,8 @@ namespace LiveSplit.UI.Components
             GradientString = SettingsHelper.ParseString(element["BackgroundGradient"]);
             Comparison = SettingsHelper.ParseString(element["Comparison"]);
             Display2Rows = SettingsHelper.ParseBool(element["Display2Rows"], false);
+            SwitchToBestPossibleTime = SettingsHelper.ParseBool(element["SwitchToBestPossibleTime"], false);
+            LabelOverride = SettingsHelper.ParseString(element["LabelOverride"]) ?? string.Empty;
         }
 
         public XmlNode GetSettings(XmlDocument document)
@@ -190,7 +214,9 @@ namespace LiveSplit.UI.Components
             SettingsHelper.CreateSetting(document, parent, "BackgroundColor2", BackgroundColor2) ^
             SettingsHelper.CreateSetting(document, parent, "BackgroundGradient", BackgroundGradient) ^
             SettingsHelper.CreateSetting(document, parent, "Comparison", Comparison) ^
-            SettingsHelper.CreateSetting(document, parent, "Display2Rows", Display2Rows);
+            SettingsHelper.CreateSetting(document, parent, "Display2Rows", Display2Rows) ^
+            SettingsHelper.CreateSetting(document, parent, "SwitchToBestPossibleTime", SwitchToBestPossibleTime) ^
+            SettingsHelper.CreateSetting(document, parent, "LabelOverride", LabelOverride);
         }
 
         private void ColorButtonClick(object sender, EventArgs e)

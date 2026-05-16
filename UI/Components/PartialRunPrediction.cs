@@ -151,12 +151,31 @@ namespace LiveSplit.UI.Components
 
                     if (state.CurrentSplitIndex > Settings.VisualCompareSplitNumber - 1)
                     {
-                        InternalComponent.InformationName = "Time (" + visualCompareSplitNumberSegment.Name + ")";
-                        InternalComponent.TimeValue = visualCompareSplitNumberSegment.SplitTime[state.CurrentTimingMethod].GetValueOrDefault();
+                        if (Settings.SwitchToBestPossibleTime)
+                        {
+                            InternalComponent.InformationName = "Best Possible Time";
+
+                            TimeSpan? delta = LiveSplitStateHelper.GetLastDelta(state, state.CurrentSplitIndex, comparison, state.CurrentTimingMethod) ?? TimeSpan.Zero;
+                            TimeSpan? liveDelta = state.CurrentTime[state.CurrentTimingMethod] - state.CurrentSplit.Comparisons[comparison][state.CurrentTimingMethod];
+                            if (liveDelta > delta)
+                            {
+                                delta = liveDelta;
+                            }
+
+                            InternalComponent.TimeValue = delta + state.Run.Last().Comparisons[comparison][state.CurrentTimingMethod];
+                        }
+                        else
+                        {
+                            InternalComponent.InformationName = "Time (" + visualCompareSplitNumberSegment.Name + ")";
+                            InternalComponent.TimeValue = visualCompareSplitNumberSegment.SplitTime[state.CurrentTimingMethod].GetValueOrDefault();
+                        }
                     }
                     else
                     {
-                        InternalComponent.InformationName = "Best Possible Time (" + visualCompareSplitNumberSegment.Name + ")";
+                        var labelOverride = Settings.LabelOverride;
+                        InternalComponent.InformationName = !string.IsNullOrEmpty(labelOverride)
+                            ? labelOverride
+                            : "Best Possible Time (" + visualCompareSplitNumberSegment.Name + ")";
 
                         if (state.CurrentPhase == TimerPhase.Running || state.CurrentPhase == TimerPhase.Paused)
                         {
